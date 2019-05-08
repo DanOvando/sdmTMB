@@ -111,7 +111,7 @@ Type objective_function<Type>::operator()()
   //using namespace R_inla;
   using namespace density;
   using namespace Eigen;
-
+  using namespace atomic;
   // Vectors of real data
   DATA_VECTOR(y_i);      // response
   DATA_MATRIX(X_ij);     // model matrix
@@ -129,7 +129,7 @@ Type objective_function<Type>::operator()()
   // Indices for factors
   DATA_FACTOR(year_i);
 
-  DATA_INTEGER(flag); // flag=0 => only prior returned; used when normalizing in R
+  //DATA_INTEGER(flag); // flag=0 => only prior returned; used when normalizing in R
   DATA_INTEGER(normalize_in_r);
 
   // Prediction?
@@ -140,9 +140,9 @@ Type objective_function<Type>::operator()()
   DATA_INTEGER(calc_time_totals);
 
   DATA_INTEGER(enable_priors);
-  DATA_INTEGER(ar1_fields);
+  //DATA_INTEGER(ar1_fields);
   // DATA_INTEGER(separable_ar1);
-  DATA_INTEGER(include_spatial);
+  //DATA_INTEGER(include_spatial);
   DATA_INTEGER(random_walk);
 
   DATA_VECTOR(proj_lon);
@@ -166,8 +166,8 @@ Type objective_function<Type>::operator()()
   DATA_VECTOR(proj_t_i);
   DATA_IVECTOR(proj_spatial_index);
 
-  DATA_INTEGER(spatial_only);
-  DATA_INTEGER(spatial_trend);
+  //DATA_INTEGER(spatial_only);
+  //DATA_INTEGER(spatial_trend);
 
   // ------------------ Parameters ---------------------------------------------
 
@@ -338,7 +338,7 @@ Type objective_function<Type>::operator()()
   // ------------------ Probability of data given random effects ---------------
   vector<Type> lambda = exp(log_lambda);
   matrix<Type> S = lambda(0)*S1 + lambda(1)*S2;
-  nll_data -= 0.5*logdet(S) - 0.5*(beta * vector<Type>(S*beta)).sum();
+  nll_data -= 0.5*logdet(S) - 0.5*(b_j * vector<Type>(S*b_j)).sum();
 
   Type s1, s2;
   for (int i = 0; i < n_i; i++) {
@@ -394,14 +394,14 @@ Type objective_function<Type>::operator()()
         }
       }
     }
-    vector<Type> proj_re_sp = proj_mesh * omega_s;
-    vector<Type> proj_re_sp_st_all = RepeatVector(proj_re_sp, n_t);
-    array<Type> proj_re_st_temp(proj_mesh.rows(), n_t);
-    array<Type> proj_re_st(proj_mesh.rows(), n_t);
-    for (int i = 0; i < n_t; i++) {
-      proj_re_st_temp.col(i) = proj_mesh * vector<Type>(epsilon_st.col(i));
-      proj_re_st.col(i) = proj_re_st_temp.col(i);
-    }
+    //vector<Type> proj_re_sp = proj_mesh * omega_s;
+    //vector<Type> proj_re_sp_st_all = RepeatVector(proj_re_sp, n_t);
+    //array<Type> proj_re_st_temp(proj_mesh.rows(), n_t);
+    //array<Type> proj_re_st(proj_mesh.rows(), n_t);
+    //for (int i = 0; i < n_t; i++) {
+    //  proj_re_st_temp.col(i) = proj_mesh * vector<Type>(epsilon_st.col(i));
+    //  proj_re_st.col(i) = proj_re_st_temp.col(i);
+    //}
 
     vector<Type> proj_re_sp_trend(proj_X_ij.rows());
     vector<Type> proj_re_sp_slopes(proj_X_ij.rows());
@@ -410,13 +410,13 @@ Type objective_function<Type>::operator()()
       proj_re_sp_slopes(i) = Type(0);
     }
 
-    if (spatial_trend) {
-      vector<Type> proj_re_sp_slopes_all = proj_mesh * omega_s_trend;
-      for (int i = 0; i < proj_X_ij.rows(); i++) {
-        proj_re_sp_trend(i) = proj_re_sp_slopes_all(proj_spatial_index(i)) * proj_t_i(i);
-        proj_re_sp_slopes(i) = proj_re_sp_slopes_all(proj_spatial_index(i));
-      }
-    }
+    //if (spatial_trend) {
+      //vector<Type> proj_re_sp_slopes_all = proj_mesh * omega_s_trend;
+      //for (int i = 0; i < proj_X_ij.rows(); i++) {
+      //  proj_re_sp_trend(i) = proj_re_sp_slopes_all(proj_spatial_index(i)) * proj_t_i(i);
+      //  proj_re_sp_slopes(i) = proj_re_sp_slopes_all(proj_spatial_index(i));
+      //}
+    //}
 
     // Pick out the appropriate spatial and/or or spatiotemporal values:
     vector<Type> proj_re_st_vector(proj_X_ij.rows());
@@ -425,10 +425,10 @@ Type objective_function<Type>::operator()()
       proj_re_st_vector(i) = Type(0);
       proj_re_sp_st(i) = Type(0);
     }
-    for (int i = 0; i < proj_X_ij.rows(); i++) {
-      proj_re_sp_st(i) = proj_re_sp_st_all(proj_spatial_index(i));
-      proj_re_st_vector(i) = proj_re_st(proj_spatial_index(i), proj_year(i));
-    }
+    //for (int i = 0; i < proj_X_ij.rows(); i++) {
+    //  proj_re_sp_st(i) = proj_re_sp_st_all(proj_spatial_index(i));
+    //  proj_re_st_vector(i) = proj_re_st(proj_spatial_index(i), proj_year(i));
+    //}
 
     vector<Type> proj_eta = proj_fe + proj_re_sp_st +
       proj_re_st_vector + proj_re_sp_trend;
