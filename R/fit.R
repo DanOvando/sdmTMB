@@ -308,22 +308,21 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
     y_i  <- model.response(mf, "numeric")
     # extract coords from df
     crds = as.matrix(data[,c("lon","lat")])
-    bound <- list(list(x = crds[,1], y = crds[,2]))
+    # create boundary
     knot_dim = c(10,10)
-    gx <- seq(min(crds[,1])-0.001, max(crds[,1])+0.001, len = knot_dim[1])
-    gy <- seq(min(crds[,2])-0.001, max(crds[,2])+0.001, len = knot_dim[2])
+    gx <- seq(min(crds[,1]), max(crds[,1]), len = knot_dim[1])
+    gy <- seq(min(crds[,2]), max(crds[,2]), len = knot_dim[2])
     gp <- expand.grid(gx, gy)
     names(gp) <- c("x","y")
-    # only take outline / border cells
-    gp = gp[which(gp$x == min(gp$x) | gp$x == max(gp$x) |
-        gp$y == min(gp$y) | gp$y == max(gp$y)),]
-    x = crds[,1]
-    y = crds[,2]
-    knots <- gp[with(gp, inSide(bound, x, y)), ]
+
+    bound = expand.grid("x" = c(min(gp$x)-1,max(gp$x)+1),
+      "y" = c(min(gp$y)-1,max(gp$y)+1))
+    bound <- list(list(x = bound[,"x"], y = bound[,"y"]))
+
 
     # note: k-1 means dimension selected by gcv
-    mod = mgcv::gam(density ~ s(x,y, bs="so", xt = list(bnd=bound)),
-      data=data, method="REML", knots=knots)
+    mod = mgcv::gam(density ~ s(x,y, bs="so", k=-1,xt = list(bnd=bound)),
+      data=data, method="REML", knots=expand.grid("x"=runif(10,-131,-128),"y"=runif(10,51,52.5)))
   }
 
 
