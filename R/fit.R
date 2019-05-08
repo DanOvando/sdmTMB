@@ -37,6 +37,8 @@ NULL
 #'   include spatiotemporal random effects)? By default a spatial-only model
 #'   will be fit if there is only one unique value in the time column or the
 #'   `time` argument is left at its default value of `NULL`.
+#' @param use_mgcv Logical: whether to use INLA meshes (FALSE) or use mgcv smoothers.
+#'   Soap film smoother is currently implemented when use_mgcv = TRUE
 #'
 #' @importFrom methods as is
 #' @importFrom stats gaussian model.frame model.matrix
@@ -93,7 +95,8 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
   time_varying = NULL, silent = TRUE, multiphase = TRUE, anisotropy = FALSE,
   control = sdmTMBcontrol(), enable_priors = FALSE, ar1_fields = FALSE,
   include_spatial = TRUE, spatial_trend = FALSE, normalize = FALSE,
-  spatial_only = identical(length(unique(data[[time]])), 1L)) {
+  spatial_only = identical(length(unique(data[[time]])), 1L),
+  use_mgcv = FALSE) {
 
   # separable_ar1 <- TRUE # hard code
 
@@ -124,6 +127,7 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
     X_rw_ik <- matrix(0, nrow = nrow(data), ncol = 1)
 
   # Stuff needed for spatiotemporal A matrix:
+  if(use_mgcv==FALSE) {
   data$sdm_orig_id <- seq(1, nrow(data))
   data$sdm_x <- spde$x
   data$sdm_y <- spde$y
@@ -134,8 +138,10 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
   data <- data[order(data$sdm_orig_id),, drop=FALSE]
   A_st <- INLA::inla.spde.make.A(spde$mesh,
     loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE]))
-
   n_s <- nrow(spde$mesh$loc)
+  }
+
+
   tmb_data <- list(
     y_i        = y_i,
     n_t        = length(unique(data[[time]])),
