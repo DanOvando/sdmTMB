@@ -115,6 +115,8 @@ Type objective_function<Type>::operator()()
   // Vectors of real data
   DATA_VECTOR(y_i);      // response
   DATA_MATRIX(X_ij);     // model matrix
+  DATA_MATRIX(S1);       // model matrix for S1 penalty
+  DATA_MATRIX(S2);       // model matrix for S2 penalty
   DATA_VECTOR(t_i);      // numeric year vector -- only for spatial_trend==1
   DATA_MATRIX(X_rw_ik);  // model matrix for random walk covariate(s)
 
@@ -188,6 +190,8 @@ Type objective_function<Type>::operator()()
   PARAMETER_VECTOR(omega_s_trend);    // spatial effects on trend; n_s length
   PARAMETER_ARRAY(epsilon_st);  // spatio-temporal effects; n_s by n_t matrix
 
+  // penalties
+  PARAMETER_VECTOR(log_lambda);
   // ------------------ End of parameters --------------------------------------
 
   int n_i = y_i.size();   // number of observations
@@ -332,6 +336,9 @@ Type objective_function<Type>::operator()()
   }
 
   // ------------------ Probability of data given random effects ---------------
+  vector<Type> lambda = exp(log_lambda);
+  matrix<Type> S = lambda(0)*S1 + lambda(1)*S2;
+  nll_data -= 0.5*logdet(S) - 0.5*(beta * vector<Type>(S*beta)).sum();
 
   Type s1, s2;
   for (int i = 0; i < n_i; i++) {
