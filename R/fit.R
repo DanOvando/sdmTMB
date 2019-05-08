@@ -139,8 +139,6 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
   A_st <- INLA::inla.spde.make.A(spde$mesh,
     loc = as.matrix(fake_data[, c("sdm_x", "sdm_y"), drop = FALSE]))
   n_s <- nrow(spde$mesh$loc)
-  }
-
 
   tmb_data <- list(
     y_i        = y_i,
@@ -177,6 +175,7 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
     spatial_only = as.integer(spatial_only),
     spatial_trend = as.integer(spatial_trend)
   )
+
   tmb_data$flag <- 1L # Include data
 
   tmb_params <- list(
@@ -302,6 +301,32 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
     call       = match.call(expand.dots = TRUE),
     sd_report  = sd_report),
     class      = "sdmTMB")
+  }
+
+  # this is the
+  if(use_mgcv==FALSE) {
+    y_i  <- model.response(mf, "numeric")
+    # extract coords from df
+    crds = as.matrix(data[,c("lon","lat")])
+    bound <- list(list(x = crds[,1], y = crds[,2]))
+    knot_dim = c(10,10)
+    gx <- seq(min(crds[,1])-0.001, max(crds[,1])+0.001, len = knot_dim[1])
+    gy <- seq(min(crds[,2])-0.001, max(crds[,2])+0.001, len = knot_dim[2])
+    gp <- expand.grid(gx, gy)
+    names(gp) <- c("x","y")
+    # only take outline / border cells
+    gp = gp[which(gp$x == min(gp$x) | gp$x == max(gp$x) |
+        gp$y == min(gp$y) | gp$y == max(gp$y)),]
+    x = crds[,1]
+    y = crds[,2]
+    knots <- gp[with(gp, inSide(bound, x, y)), ]
+
+    # note: k-1 means dimension selected by gcv
+    mod = mgcv::gam(density ~ s(x,y, bs="so", xt = list(bnd=bound)),
+      data=data, method="REML", knots=knots)
+  }
+
+
 }
 
 set_par_value <- function(opt, par) {

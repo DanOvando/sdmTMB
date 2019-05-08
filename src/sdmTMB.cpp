@@ -112,6 +112,7 @@ Type objective_function<Type>::operator()()
   using namespace density;
   using namespace Eigen;
   using namespace atomic;
+
   // Vectors of real data
   DATA_VECTOR(y_i);      // response
   DATA_MATRIX(X_ij);     // model matrix
