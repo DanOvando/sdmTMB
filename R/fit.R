@@ -315,14 +315,17 @@ sdmTMB <- function(data, formula, time = NULL, spde, family = gaussian(link = "i
     gp <- expand.grid(gx, gy)
     names(gp) <- c("x","y")
 
-    bound = expand.grid("x" = c(min(gp$x)-1,max(gp$x)+1),
-      "y" = c(min(gp$y)-1,max(gp$y)+1))
+    bound = expand.grid("x" = seq(min(gp$x)-1,max(gp$x)+1, length.out=knot_dim[1]),
+      "y" = seq(min(gp$y)-1,max(gp$y)+1, length.out=knot_dim[2]))
     bound <- list(list(x = bound[,"x"], y = bound[,"y"]))
 
+    # note: date miller has an autocrunch function for finding bad knots
+    # this could be called before the call to gam, otherwise this will break
+    # dave's code: https://github.com/dill/soap_checker/blob/master/README.Rmd
 
     # note: k-1 means dimension selected by gcv
     mod = mgcv::gam(density ~ s(x,y, bs="so", k=-1,xt = list(bnd=bound)),
-      data=data, method="REML", knots=expand.grid("x"=runif(10,-131,-128),"y"=runif(10,51,52.5)))
+      data=data, method="REML", knots=gp[autocruncher(bound, knots=gp,k=-1),])
   }
 
 
